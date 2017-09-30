@@ -1,5 +1,27 @@
 # epoll 相关结构体和函数
 
+* epoll特点
+
+1. 如果事件需要循环处理，epoll只要拷贝文件描述符到kernel一次，而select/poll要拷贝多次。
+
+2. select会复写传入的fd_set 指针，而poll对每个fd返回一个掩码，不更改原来的掩码，从而可以对同一个集合多次调用poll，而无需调整。（select的fd_set既是输入又是输出，poll的输入输出分离）
+
+3. select和poll即使只有一个描述符就绪，也要遍历整个集合，而epoll的文件描述符都是就绪、有意义的，这点在集合中活跃的描述符很少的时候，epoll的优势明显
+
+4. epoll能突破select fd size 的最多限制。
+
+
+**epoll采用基于事件的就绪通知方式**。
+在select/poll中，进程只有在调用一定的方法后，内核才对所有监视的文件描述符进行扫描，而epoll事先通过epoll_ctl()来注册一个文件描述符，一旦基于某个文件描述符就绪时，内核会采用类似callback的回调机制，迅速激活这个文件描述符，当进程调用epoll_wait()时便得到通知。
+
+
+epoll的水平触发和边缘触发，以及边缘触发为什么要使用非阻塞IO？
+
+参考
+
+http://www.cnblogs.com/yuuyuu/p/5103744.html
+
+
 * epoll用到的所有函数都是在头文件sys/epoll.h中声明的
 ```
 typedef union epoll_data {  
@@ -45,12 +67,6 @@ timeout:等待I/O事件发生的超时值（ms）；-1永不超时，直到有�
 
 该函数返回发生事件数。-1有错误。
 ```
-
-参考
-
-https://www.shiyanlou.com/courses/315/labs/981/document
-
-http://blog.csdn.net/wangpengqi/article/details/9933011
 
 -----
 
